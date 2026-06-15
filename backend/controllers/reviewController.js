@@ -3,6 +3,8 @@ const Review = require('../models/Review');
 const ServiceRequest = require('../models/ServiceRequest');
 const ProviderProfile = require('../models/ProviderProfile');
 const logActivity = require('../utils/logActivity');
+const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Submit a rating & review for a delivered project
 // @route   POST /api/reviews
@@ -72,6 +74,20 @@ const createReview = asyncHandler(async (req, res) => {
   await logActivity(req.user._id, 'REVIEW_SUBMITTED', `Reviewed request ${requestId}`, {
     rating,
   });
+
+  // Notify provider by email
+  try {
+    const providerUser = await User.findById(request.provider);
+    if (providerUser && providerUser.email) {
+      await sendEmail({
+        to: providerUser.email,
+        subject: `New review for your service`,
+        html: `<p>Your service received a new review with <strong>${rating} stars</strong>.</p><p>Comment: ${comment || 'No comment'}</p><p><a href="${process.env.CLIENT_URL}/providers/${request.provider}">View profile</a></p>`,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send review notification email:', err.message);
+  }
 
   res.status(201).json({ success: true, data: review });
 });

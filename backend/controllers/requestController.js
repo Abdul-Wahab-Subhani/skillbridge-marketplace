@@ -2,8 +2,10 @@ const asyncHandler = require('express-async-handler');
 const ServiceRequest = require('../models/ServiceRequest');
 const Service = require('../models/Service');
 const ProviderProfile = require('../models/ProviderProfile');
+const User = require('../models/User');
 const logActivity = require('../utils/logActivity');
 const { emitToUser } = require('../utils/socket');
+const sendEmail = require('../utils/sendEmail');
 
 // Allowed status transitions, keyed by who is allowed to make them.
 // Format: { fromStatus: { toStatus: ['allowedRole', ...] } }
@@ -71,6 +73,20 @@ const createRequest = asyncHandler(async (req, res) => {
     requestId: request._id,
     serviceTitle: service.title,
   });
+
+  // Send email notification to provider
+  try {
+    const providerUser = await User.findById(service.provider);
+    if (providerUser && providerUser.email) {
+      await sendEmail({
+        to: providerUser.email,
+        subject: `New request for ${service.title}`,
+        html: `<p>You have a new request for <strong>${service.title}</strong>.</p><p><a href="${process.env.CLIENT_URL}/requests/${request._id}">View request</a></p>`,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send new request email:', err.message);
+  }
 
   res.status(201).json({ success: true, data: request });
 });
@@ -195,6 +211,24 @@ const updateRequestStatus = asyncHandler(async (req, res) => {
     requestId: request._id,
     status,
   });
+
+  // Send email about status update
+  try {
+    // Determine target user id and fetch their email
+    const targetUserId = isCustomer ? request.provider : request.customer;
+    const targetUser = await User.findById(targetUserId);
+    const targetEmail = targetUser?.email;
+
+    if (targetEmail) {
+      await sendEmail({
+        to: targetEmail,
+        subject: `Request ${request._id} status updated to ${status}`,
+        html: `<p>The request for <strong>${request._id}</strong> is now <strong>${status}</strong>.</p><p><a href="${process.env.CLIENT_URL}/requests/${request._id}">View request</a></p>`,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send status update email:', err.message);
+  }
 
   res.json({ success: true, data: request });
 });

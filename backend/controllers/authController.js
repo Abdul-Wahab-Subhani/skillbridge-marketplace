@@ -3,6 +3,7 @@ const User = require('../models/User');
 const ProviderProfile = require('../models/ProviderProfile');
 const generateToken = require('../utils/generateToken');
 const logActivity = require('../utils/logActivity');
+const sendEmail = require('../utils/sendEmail');
 
 // @desc    Register a new user (customer, provider, or admin*)
 // @route   POST /api/auth/register
@@ -50,6 +51,17 @@ const registerUser = asyncHandler(async (req, res) => {
   await logActivity(user._id, 'USER_REGISTERED', `${user.role} account created`, {
     email: user.email,
   });
+
+  // Send welcome email
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: `Welcome to Teyzix Marketplace, ${user.name}!`,
+      html: `<p>Hi ${user.name},</p><p>Welcome to Teyzix Marketplace. We're glad to have you on board.</p><p><a href="${process.env.CLIENT_URL}">Go to Marketplace</a></p>`,
+    });
+  } catch (err) {
+    console.error('Failed to send welcome email:', err.message);
+  }
 
   res.status(201).json({
     success: true,

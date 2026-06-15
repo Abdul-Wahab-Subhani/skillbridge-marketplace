@@ -154,6 +154,7 @@ All protected routes require: `Authorization: Bearer <token>`
 | PUT | `/me` | Private | Update name/phone |
 | PUT | `/change-password` | Private | Change password |
 | POST | `/logout` | Private | Logout (activity log) |
+| DELETE | `/me` | Private | Deactivate own account (soft-delete). Sets `isActive=false` — user cannot log in until reactivated by an admin. |
 
 ### Provider Routes `/api/providers`
 | Method | Path | Access | Description |
@@ -332,22 +333,63 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# Optional — for email notifications
-SMTP_HOST=smtp.gmail.com
+# Email (Nodemailer) - configure for real delivery or leave blank to use Ethereal for dev
+SMTP_HOST=smtp.gmail.com       # or smtp.sendgrid.net / smtp.mailgun.org
 SMTP_PORT=587
-SMTP_USER=your@gmail.com
-SMTP_PASS=your_app_password
+SMTP_USER=your_email_or_username
+SMTP_PASS=your_smtp_password_or_api_key
 EMAIL_FROM=SkillBridge <no-reply@skillbridge.io>
 
 # Optional — prevents accidental admin registration in production
 ADMIN_REGISTRATION_SECRET=change_this_before_production
 ```
 
-### Frontend — `frontend/.env`
-```env
-VITE_API_URL=http://localhost:5000/api
-VITE_SOCKET_URL=http://localhost:5000
-```
+Email Notifications (sendEmail helper)
+
+- Location: `backend/utils/sendEmail.js` — reusable wrapper around Nodemailer. It builds a professional themed HTML template automatically when you call it.
+- Signature:
+  - `sendEmail({ to, subject, text })` — builds a themed HTML email from `subject` + `text`.
+  - `sendEmail({ to, subject, template: { heading, body, ctaText, ctaUrl } })` — use custom template fields for richer emails.
+- Colors: override via `.env` with `EMAIL_PRIMARY_COLOR` and `EMAIL_ACCENT_COLOR`.
+- Templates: header/footer and card layout are generated automatically. To add canned templates, place HTML partials under `backend/email-templates/` (optional future enhancement).
+
+Testing email delivery
+
+- Dev preview (no real email): the helper falls back to Ethereal when SMTP env is not configured. Ethereal returns a preview URL you can open in the browser.
+- Real delivery: set SMTP_* env values (Gmail app password, SendGrid SMTP creds, Mailgun or SES).
+
+Test script
+
+- Path: `backend/scripts/sendTestEmail.js`
+- Usage (from repository root):
+  ```powershell
+  cd backend
+  npm install        # ensure nodemailer & dotenv are installed
+  node scripts/sendTestEmail.js
+  ```
+- Behavior: sends to the address hardcoded in the script (set to your test address) using SMTP if configured, otherwise prints an Ethereal preview URL.
+
+Wiring notifications in the codebase
+
+- The project now sends emails on common events using `sendEmail`:
+  - User registration (welcome email) — wired in `backend/controllers/authController.js` after successful register.
+  - New service request created — wired in `backend/controllers/requestController.js` (provider notified).
+  - Request status updates — wired in `backend/controllers/requestController.js` (other participant notified).
+  - Review submitted — wired in `backend/controllers/reviewController.js` (provider notified).
+- To add more notifications: import `sendEmail` and call it after the relevant DB action completes.
+
+Security & deliverability notes
+
+- Never commit `.env` or SMTP secrets to git. Add `.env` to `.gitignore`.
+- For Gmail: enable 2-Step Verification and create an App Password to use as `SMTP_PASS`.
+- For production use a transactional provider (SendGrid/Mailgun/SES) for better deliverability and analytics.
+
+Frontend flow — Account Deletion
+
+- UI: Profile page includes a "Danger Zone" card and "Deactivate Account" button (frontend at `frontend/src/pages/Profile.jsx`). Clicking the button opens a confirmation dialog.
+- Request: frontend calls `DELETE /api/auth/me` with the user's auth token. Endpoint sets `isActive=false` (soft deactivate).
+- Client behavior: on successful response the frontend logs out the user and redirects to the login / landing page.
+- Admin reactivation: currently requires an admin to set `isActive=true` for the user (admin UI or direct DB update). If you want an email to admins on account deletion, call `sendEmail` from the `deleteMe` controller.
 
 ---
 

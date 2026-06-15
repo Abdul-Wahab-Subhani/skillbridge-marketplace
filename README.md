@@ -1,5 +1,17 @@
 # SkillBridge — Multi-Vendor Service Marketplace Platform
 
+[![Status](https://img.shields.io/badge/status-development-yellow?style=flat-square)](https://github.com/Abdul-Wahab-Subhani/skillbridge-marketplace)
+[![GitHub stars](https://img.shields.io/github/stars/Abdul-Wahab-Subhani/skillbridge-marketplace?style=flat-square)](https://github.com/Abdul-Wahab-Subhani/skillbridge-marketplace/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/Abdul-Wahab-Subhani/skillbridge-marketplace?style=flat-square)](https://github.com/Abdul-Wahab-Subhani/skillbridge-marketplace/network/members)
+[![GitHub issues](https://img.shields.io/github/issues/Abdul-Wahab-Subhani/skillbridge-marketplace?style=flat-square)](https://github.com/Abdul-Wahab-Subhani/skillbridge-marketplace/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/Abdul-Wahab-Subhani/skillbridge-marketplace?style=flat-square)](https://github.com/Abdul-Wahab-Subhani/skillbridge-marketplace/commits/main)
+[![License](https://img.shields.io/github/license/Abdul-Wahab-Subhani/skillbridge-marketplace?style=flat-square)](https://github.com/Abdul-Wahab-Subhani/skillbridge-marketplace/blob/main/LICENSE)
+
+[![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/mongodb-atlas-4ea94b?style=flat-square)](https://www.mongodb.com/atlas)
+[![Cloudinary](https://img.shields.io/badge/cloudinary-uploads-blue?style=flat-square)](https://cloudinary.com)
+
+
 > **Teyzix Core Internship | Task ID: FSWD-1 | Domain: Full Stack Web Development**
 
 A production-ready, full-stack marketplace platform where customers browse and request services from providers, with real-time project tracking, role-based dashboards, and a review system.

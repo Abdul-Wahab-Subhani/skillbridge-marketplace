@@ -180,6 +180,26 @@ const logoutUser = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Logged out successfully' });
 });
 
+// @desc    Deactivate own account (soft delete)
+// @route   DELETE /api/auth/me
+// @access  Private
+const deleteMe = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  // Soft deactivate so data is preserved but user cannot log in
+  user.isActive = false;
+  await user.save();
+
+  await logActivity(req.user._id, 'USER_DELETED', 'User account deactivated');
+
+  res.json({ success: true, message: 'Account deactivated successfully' });
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -187,4 +207,5 @@ module.exports = {
   updateMe,
   changePassword,
   logoutUser,
+  deleteMe,
 };

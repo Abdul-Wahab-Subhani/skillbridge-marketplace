@@ -5,12 +5,14 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
 const Profile = () => {
-  const { user, setUser } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const [form, setForm] = useState({ name: '', phone: '' });
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '' });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     if (user) setForm({ name: user.name || '', phone: user.phone || '' });
@@ -63,6 +65,21 @@ const Profile = () => {
       toast.error(err.response?.data?.message || 'Avatar upload failed');
     } finally {
       setUploadingAvatar(false);
+    }
+  };
+
+  const handleAccountDelete = async () => {
+    if (!confirm('Are you sure you want to deactivate your account? This will prevent you from logging in unless reactivated by an admin.')) return;
+    setDeleting(true);
+    try {
+      await api.delete('/auth/me');
+      toast.success('Account deactivated');
+      // Perform client logout
+      logout();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to deactivate account');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -162,6 +179,35 @@ const Profile = () => {
           {savingPw ? 'Changing...' : 'Change Password'}
         </button>
       </form>
+
+      {/* Account deletion */}
+      <div className="mt-6 card p-6">
+        <h2 className="font-semibold text-red-600">Danger Zone</h2>
+        <p className="mt-2 text-sm text-red-600/80">Deactivate your account. This is reversible only by an admin.</p>
+        <div className="mt-4">
+          <button
+            onClick={() => setShowConfirm(true)}
+            className="btn-danger"
+            disabled={deleting}
+          >
+            {deleting ? 'Deactivating...' : 'Deactivate Account'}
+          </button>
+        </div>
+      </div>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="card p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold text-red-600">Confirm account deactivation</h3>
+            <p className="mt-2 text-sm text-brand-500">Are you sure? Deactivating will prevent you from logging in. This action can only be undone by an admin.</p>
+            <div className="mt-4 flex gap-2 justify-end">
+              <button onClick={() => setShowConfirm(false)} className="btn-outline">Cancel</button>
+              <button onClick={handleAccountDelete} className="btn-danger" disabled={deleting}>{deleting ? 'Deactivating...' : 'Yes, deactivate'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

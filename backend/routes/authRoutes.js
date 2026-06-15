@@ -9,6 +9,7 @@ const {
   updateMe,
   changePassword,
   logoutUser,
+  deleteMe,
 } = require('../controllers/authController');
 
 const router = express.Router();
@@ -53,5 +54,8 @@ router.put(
   changePassword
 );
 router.post('/logout', protect, logoutUser);
+
+// Deactivate own account (soft delete)
+router.delete('/me', protect, deleteMe);
 
 module.exports = router;
